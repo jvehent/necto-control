@@ -7,7 +7,7 @@ use Net::LDAP qw/LDAP_SUCCESS LDAP_PROTOCOL_ERROR/;
 use Config::Simple;
 
 # import configuration
-$cfg = new Config::Simple();
+my $cfg = new Config::Simple();
 $cfg->read('./config/necto.cfg');
 
 # create main cgi object
@@ -19,23 +19,20 @@ my $password = $q->param('pwd');
 
 if(($username && $password) ne ""){
     #control credential against ldap directory
-    my $ldap = Net::LDAP->new($cf->param("ldap.address"), port=>$cfg->param("ldap.port"));
+    my $ldap = Net::LDAP->new($cfg->param("ldap.address"), port=>$cfg->param("ldap.port"));
     
     #bind anonymously, perform a search of the username, then rebind using the user password
     my $ldap_msg = $ldap->bind;
 
     unless ($ldap_msg->is_error){
-
-        $ldap_msg = $ldap->search( filter=>$cfg->param("ldap.filter"), base=>$cfg->param("ldap.base"), scope=>$cfg->param("ldap.scope"));
+        
+        $ldap_msg = $ldap->search( filter=>"(uid=$username)", base=>$cfg->param("ldap.base"), scope=>$cfg->param("ldap.scope"));
 
         if($ldap_msg->count != 0 && !$ldap_msg->is_error){
 
             my @search_result = $ldap_msg->entries;
             my $user_entry = $search_result[0];
             my $user_dn = $user_entry->dn;
-            my $user_full_name = $user_entry->get_value('cn');
-            my $user_email = $user_entry->get_value('mail');
-
             # rebind using user/password
             $ldap_msg = $ldap->bind($user_dn, password=>$password);
 
@@ -45,14 +42,18 @@ if(($username && $password) ne ""){
 
                 # user has to re-log in after 15m of inactivity
                 $session->param(-name=>'is_logged_in', -value=>'true');
-                $session->expire('is_logged_in', '+15m');
+                $session->expire('is_logged_in', $cfg->param("session.ttl"));
 
-                # store user full name and email taken from LDAP
-                $session->param(-name=>'fullname', -value=>"$user_full_name");
-                $session->param(-name=>'email', -value=>"$user_email");
+                # store user information in session
+                $session->param(-name=>'dn', -value=>$user_dn);
+                $session->param(-name=>'cn', -value=>$user_entry->get_value('cn'));
+                $session->param(-name=>'sn', -value=>$user_entry->get_value('sn'));
+                $session->param(-name=>'mail', -value=>$user_entry->get_value('mail'));
+                $session->param(-name=>'uid', -value=>$user_entry->get_value('uid'));
+                $session->param(-name=>'password', -value=>$password);
 
                 #session objects are destroyed after one hour
-                $session->expire('+1h');
+                $session->expire($cfg->param("session.expire"));
 
                 print $session->header(-location=>'index.cgi');
             }

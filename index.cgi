@@ -3,8 +3,15 @@ use strict;
 use CGI;
 use CGI::Carp qw/fatalsToBrowser warningsToBrowser/;
 use CGI::Session ('-ip_match');
+use Config::Simple;
 
-my $session = CGI::Session->load(undef,undef,{Directory=>'./tmp/sessions'});
+# import configuration
+my $cfg = new Config::Simple();
+$cfg->read('./config/necto.cfg');
+
+# load session
+my $session = CGI::Session->load(undef,undef,{Directory=>$cfg->param("session.dir")});
+
 my $q = new CGI;
 
 print $q->header(-cache_control=>"no-cache, no-store, must-revalidate");
@@ -31,9 +38,9 @@ elsif($session->is_empty){
     print $q->end_form;
 }
 else{
-    my $fullname = $session->param('fullname');
-
-    print $q->p("Welcome back $fullname ! ");
-    print $q->a({href=>"./session.cgi?action=logout"},"Logout");
+    print $q->p("Welcome back ".$session->param('cn')." ".$session->param('sn'),$q->br,
+                $q->a({href=>"./session.cgi?action=logout"},"Logout"),$q->br,
+                $q->a({href=>"./profile.cgi"},"Manage your profile"),$q->br
+                );
 }
 print $q->end_html;
