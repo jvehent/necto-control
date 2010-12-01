@@ -5,6 +5,7 @@ use CGI::Session ( '-ip_match' );
 use CGI::Carp qw/fatalsToBrowser warningsToBrowser/;
 use Net::LDAP qw/LDAP_SUCCESS LDAP_PROTOCOL_ERROR/;
 use Config::Simple;
+use Tie::File;
 
 # import configuration
 my $cfg = new Config::Simple();
@@ -27,7 +28,9 @@ if ($session->is_expired || $session->is_empty) {
     exit 0;
 }
 
+# PASSWORD CHANGING
 # verify supplied passwords and change it in the LDAP server
+# if dspam.pwdfile is defined, change it there too
 if(defined($q->param('newpwd')) && defined($q->param('confpwd'))){
 
     my $new_password = $q->param('newpwd');
@@ -58,6 +61,33 @@ if(defined($q->param('newpwd')) && defined($q->param('confpwd'))){
                 $session->param(-name=>'password',-value=>$new_password);
                 print $q->p("Password has been changed successfully",$q->br);
             }
+        }
+
+        # if dspam.pwdfile is defined, change the password for dspam
+        if(defined($cfg->param('dspam.pwdfile'))){
+            tie my @dspam_pwd_array, 'Tie::File', $cfg->param('dspam.pwdfile') or die;
+
+            # search for user and update the line when found
+            my $dspam_user;
+            if($cfg->param('dspam.userformat') eq 'mail'){
+                $dspam_user = $session->param('mail')
+            }
+            else{
+                $dspam_user = $session->param('uid')
+            }
+            my $found = 0;
+            for my $line (@dspam_pwd_array){
+               if($line =~ /^$dspam_user/){
+                    # found it ! update the line with new password
+                    $line = $dspam_user.":".crypt($session->param('password'),$session->param('password'));
+                    $found = 1;
+                }
+            }
+            if($found == 0){
+                # password wasn't found in file, add it
+                push @dspam_pwd_array, $dspam_user.":".crypt($session->param('password'),$session->param('password'));
+            }
+            untie @dspam_pwd_array;
         }
     }
 }
