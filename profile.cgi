@@ -16,17 +16,19 @@ my $password_policy = '^.*(?=.{'.$cfg->param('user.pwdminlength').','.$cfg->para
 
 # create main cgi object
 my $q = CGI->new;
-print $q->header(-cache_control=>"no-cache, no-store, must-revalidate");
-print $q->start_html(-title=>"Necto Control");
-print $q->h1("Necto Control Center");
 
+# check session state before initiating html document
 my $session = CGI::Session->load(undef,undef,{Directory=>$cfg->param("session.dir")});
 
 if ($session->is_expired || $session->is_empty) {
     print $q->redirect("./index.cgi");
+    print $q->start_html(-title=>"Necto Control");
     print $q->end_html;
-    exit 0;
 }
+
+print $q->header(-cache_control=>"no-cache, no-store, must-revalidate");
+print $q->start_html(-title=>"Necto Control");
+print $q->h1("Necto Control Center");
 
 # PASSWORD CHANGING
 # verify supplied passwords and change it in the LDAP server
@@ -103,6 +105,6 @@ print $q->start_form(-method=>"post", -action=>"./profile.cgi");
 print $q->p("New password :"),$q->password_field(-name=>"newpwd",-type=>"password");
 print $q->p("Confirm password :"),$q->password_field(-name=>"confpwd",-type=>"password");
 print $q->submit(-name=>"Submit");
-
+print $q->end_form;
 
 print $q->end_html;

@@ -1,15 +1,20 @@
 # Necto-Control configuration file
 
-domain  = microgate.fr
-admin   = julien
+######################
+# global parameters
+
+# domain name on which the server operates
+domain  = example.net
+# administrators of the domain
+admin   = jean-kevin
 
 # LDAP server
 [ldap]
 address = localhost
 port    = 389
-base    = "dc=microgate,dc=fr"
+base    = "dc=example,dc=net"
 scope   = "one"
-admindn = "cn=admin,dc=microgate,dc=fr"
+admindn = "cn=admin,dc=example,dc=net"
 
 # session management
 [session]
@@ -18,6 +23,7 @@ ttl     = +15m
 expire  = +1h
 
 [user]
+# user password policy
 pwdminlength = 8
 pwdmaxlength = 30
 
@@ -25,10 +31,10 @@ pwdmaxlength = 30
 # dspam user are identified by uid or mail address
 userformat = mail
 # location of the password file for dspam interface
-pwdfile = '../dspam/passwords'
+pwdfile = '/var/www/dspam/passwords'
 
 [cyrus]
 admin   = cyrus
-passwd  = a2ltYWohed9827fh78qah29fh3
+passwd  = 1234567890
 address = localhost
 port    = 143

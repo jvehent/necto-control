@@ -69,6 +69,7 @@ if(($username && $password) ne ""){
 
         }
     }
+    $ldap_msg = $ldap->unbind;
 }
 elsif($q->param('action') eq 'logout'){
     $session = CGI::Session->load(undef,undef,{Directory=>$cfg->param("session.dir")}) or die CGI::Session->errstr;

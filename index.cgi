@@ -42,5 +42,8 @@ else{
                 $q->a({href=>"./session.cgi?action=logout"},"Logout"),$q->br,
                 $q->a({href=>"./profile.cgi"},"Manage your profile"),$q->br
                 );
+    if($session->param('uid') eq $cfg->param('admin')){
+        print $q->a({href=>"./accounts.cgi"},"Admin: Manage accounts"),$q->br;
+    }
 }
 print $q->end_html;
